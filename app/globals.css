@@ -1,0 +1,743 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./design-tokens.css";
+
+/* Standard built-in daisyUI themes only — migration phase. The
+   product-specific theme (mapped through this app's own --ir-* tokens in
+   design-tokens.css) is deliberately deferred to a follow-up branding pass;
+   see the migration task this change was part of. */
+@plugin "daisyui" {
+  themes:
+    light --default,
+    dark;
+}
+
+/* daisyUI's stock light/dark themes ship a purple/violet --color-primary
+   (oklch(45% 0.24 277.023) et al.) — visible on every unconverted page still
+   using semantic daisyUI classes (bg-primary, btn-primary, progress-primary,
+   checkbox-primary, ...) instead of the ir- token set above. Overriding the
+   two primary variables here re-points every one of those classes at the
+   real Shapio/IdeaRoads brand blue without waiting on the full ir- token
+   migration. Same selector specificity as daisyUI's own theme rules, so this
+   must stay after the @plugin block to win on source order. */
+[data-theme="light"],
+[data-theme="dark"] {
+  --color-primary: var(--ir-primary);
+  --color-primary-content: var(--ir-primary-foreground);
+}
+
+@custom-variant dark (&:is(.dark *));
+
+/* Local replacements for the subset of the (now-removed) shadcn package's
+   custom variants that are still consumed in this codebase — data-closed
+   (Headless UI Dialog/Menu exit transitions), data-selected (cmdk Command
+   items), data-disabled (Headless UI Menu items), data-active (Tabs). Kept
+   verbatim from the shadcn package's own definitions. data-open, data-checked,
+   data-unchecked, data-horizontal and data-vertical were audited and have zero
+   consumers, so they were dropped rather than carried forward. */
+@custom-variant data-closed {
+  &:where([data-state="closed"]),
+  &:where([data-closed]:not([data-closed="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-selected {
+  &:where([data-selected="true"]) {
+    @slot;
+  }
+}
+@custom-variant data-disabled {
+  &:where([data-disabled="true"]),
+  &:where([data-disabled]:not([data-disabled="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-active {
+  &:where([data-state="active"]),
+  &:where([data-active]:not([data-active="false"])) {
+    @slot;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Every interactive element has its own hover/focus-visible treatment, so the
+   browser's default translucent tap highlight (visible on touch/trackpad
+   click, especially over enlarged hit areas like checkbox ::after) is just
+   visual noise on top of it. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background: var(--color-base-200);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  letter-spacing: 0;
+  background-size: 32px 32px;
+}
+
+/* Single global thin scrollbar style, applied to every scrollable element in
+   the app (tables, modals, dropdowns, popovers, command lists, etc.) so
+   nothing needs its own per-component scrollbar styling. Uses --ir-text-muted
+   rather than the sidebar's --sidebar-border/--sidebar-ring (those are fixed
+   "always dark" tokens meant only for the sidebar's own dark surface — reused
+   here they rendered every scrollbar near-black even on light surfaces like
+   the feedback table). --ir-text-muted already flips under .dark, so the
+   thumb stays visible-but-subtle on both themes. `scrollbar-color`/
+   `scrollbar-width` are the standard properties (Firefox); the
+   `::-webkit-scrollbar*` pseudo-elements cover Chrome/Edge/Safari. Browsers
+   that support neither (e.g. older Safari) simply fall back to their native
+   scrollbar. */
+* {
+  scrollbar-color: var(--ir-text-muted) transparent;
+  scrollbar-width: thin;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--ir-text-muted);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ir-text-body);
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+
+  /* Typography scale */
+  --text-2xs: 0.625rem; /* 10px — micro-labels, sidebar metadata */
+  --tracking-eyebrow: 0.16em;
+  --tracking-ui: 0.1em;
+
+  /* Page & brand */
+  --color-page: var(--page);
+
+  /* Status colors — genuinely product-specific, not part of daisyUI's theme
+     vocabulary or the old shadcn token set. */
+  --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-light: var(--success-light);
+
+  /* Admin sidebar — a fixed always-dark surface, independent of the active
+     daisyUI theme (see components/admin/admin-sidebar.tsx,
+     components/workspace/workspace-sidebar.tsx). Not a daisyUI concept. */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+}
+
+:root {
+  /* ── Page background (warm beige) ─────────── */
+  --page: oklch(0.96 0.006 85);
+
+  /* ── Status colours ───────────────────────── */
+  --success: oklch(0.45 0.13 145); /* emerald-700 */
+  --success-foreground: oklch(0.25 0.09 145); /* emerald-900 */
+  --success-subtle: oklch(0.97 0.04 145); /* emerald-50  */
+  --success-light: oklch(0.78 0.13 145); /* emerald-300 (on dark bg) */
+  --warning: oklch(0.58 0.15 65); /* amber-700   */
+  --info: oklch(0.5 0.16 255); /* blue-700    */
+
+  /* ── Sidebar — always dark (admin panel) ───── */
+  --sidebar: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.985 0 0);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.22 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.22 0 0);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+.dark {
+  --page: oklch(0.18 0.004 85);
+
+  --success: oklch(0.65 0.13 145);
+  --success-foreground: oklch(0.9 0.06 145);
+  --success-subtle: oklch(0.22 0.06 145);
+  --success-light: oklch(0.78 0.13 145);
+  --warning: oklch(0.72 0.15 65);
+  --info: oklch(0.7 0.14 255); /* blue-300 (on dark bg) */
+
+  --sidebar: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.985 0 0);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.22 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.22 0 0);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-base-300 outline-primary/50;
+  }
+  body {
+    @apply bg-base-200 text-base-content;
+  }
+  html {
+    @apply font-sans;
+  }
+  button,
+  input {
+    font: inherit;
+  }
+  /* Clickable elements should always show a pointer on hover, regardless of
+     whether an individual component remembered to add cursor-pointer. Excludes
+     disabled buttons, which keep the browser's default (non-interactive) cursor. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  [role="switch"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  label[for],
+  summary {
+    cursor: pointer;
+  }
+}
+
+/* ── Quill editor — base CSS imported statically in quill-editor.tsx ── */
+
+/* Container & toolbar borders */
+.ql-container.ql-snow {
+  position: relative;
+  font-family: inherit;
+  font-size: 0.875rem;
+  border: none !important;
+}
+
+.ql-toolbar.ql-snow {
+  padding: 5px 8px;
+  font-family: inherit;
+  line-height: 1;
+  border: none !important;
+  border-bottom: 1px solid var(--ir-border) !important;
+}
+
+/* Toolbar format groups */
+.ql-snow .ql-formats {
+  margin-right: 8px !important;
+  vertical-align: middle;
+}
+
+/* ── Toolbar buttons ──
+   Tailwind preflight resets display/sizing on button+svg, so we must restore them */
+.ql-snow .ql-toolbar button,
+.ql-snow.ql-toolbar button {
+  float: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 26px !important;
+  height: 24px !important;
+  padding: 2px !important;
+  vertical-align: middle;
+  cursor: pointer;
+  background: none;
+  border: none !important;
+  border-radius: 3px;
+  transition: background 0.1s;
+}
+
+.ql-snow .ql-toolbar button:hover,
+.ql-snow.ql-toolbar button:hover {
+  background: var(--ir-muted-surface);
+}
+
+.ql-snow.ql-toolbar button.ql-active,
+.ql-snow .ql-toolbar button.ql-active {
+  background: var(--ir-muted-surface);
+}
+
+/* Toolbar button tooltips — Quill's snow theme renders these buttons as
+   plain DOM nodes outside React, so they can't use the app's own Tooltip
+   component. This reproduces its look (ir-heading bubble, ir-surface
+   text, shadow-ir-md) with pure CSS instead of a native `title` attribute,
+   which shows in OS styling after a ~1s delay. */
+.ql-snow.ql-toolbar button[data-tooltip],
+.ql-snow .ql-toolbar button[data-tooltip] {
+  position: relative;
+}
+.ql-snow.ql-toolbar button[data-tooltip]::after,
+.ql-snow .ql-toolbar button[data-tooltip]::after {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  z-index: 50;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--ir-surface);
+  white-space: nowrap;
+  pointer-events: none;
+  content: attr(data-tooltip);
+  background: var(--ir-text-heading);
+  border-radius: var(--radius-ir-sm);
+  box-shadow: var(--shadow-ir-md);
+  opacity: 0;
+  transform: translateX(-50%) scale(0.95);
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
+}
+.ql-snow.ql-toolbar button[data-tooltip]:hover::after,
+.ql-snow .ql-toolbar button[data-tooltip]:hover::after,
+.ql-snow.ql-toolbar button[data-tooltip]:focus-visible::after,
+.ql-snow .ql-toolbar button[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* SVGs inside buttons */
+.ql-snow .ql-toolbar button svg,
+.ql-snow.ql-toolbar button svg {
+  display: block !important;
+  flex-shrink: 0;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* Icon stroke/fill colors */
+.ql-snow .ql-stroke {
+  stroke: var(--ir-text-muted);
+}
+.ql-snow .ql-fill,
+.ql-snow .ql-stroke.ql-fill {
+  fill: var(--ir-text-muted);
+}
+.ql-snow.ql-toolbar button:hover .ql-stroke,
+.ql-snow .ql-toolbar button:hover .ql-stroke,
+.ql-snow.ql-toolbar button.ql-active .ql-stroke,
+.ql-snow .ql-toolbar button.ql-active .ql-stroke {
+  stroke: var(--ir-text-body);
+}
+.ql-snow.ql-toolbar button:hover .ql-fill,
+.ql-snow .ql-toolbar button:hover .ql-fill,
+.ql-snow.ql-toolbar button.ql-active .ql-fill,
+.ql-snow .ql-toolbar button.ql-active .ql-fill {
+  fill: var(--ir-text-body);
+}
+
+/* Picker (header / size dropdowns) */
+.ql-snow .ql-picker {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  font-size: 0.8125rem;
+  color: var(--ir-text-muted);
+}
+.ql-snow .ql-picker-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  color: var(--ir-text-muted);
+  cursor: pointer;
+  border: none !important;
+}
+.ql-snow .ql-picker-label:hover {
+  color: var(--ir-text-body);
+}
+.ql-snow .ql-picker-label .ql-stroke {
+  stroke: var(--ir-text-muted);
+}
+.ql-snow .ql-picker-label:hover .ql-stroke {
+  stroke: var(--ir-text-body);
+}
+.ql-snow .ql-picker-options {
+  z-index: 100;
+  padding: 4px;
+  background: var(--ir-surface);
+  border: 1px solid var(--ir-border) !important;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.ql-snow .ql-picker-item {
+  padding: 4px 8px;
+  font-size: 0.8125rem;
+  color: var(--ir-text-body);
+  cursor: pointer;
+  border-radius: 3px;
+}
+.ql-snow .ql-picker-item:hover {
+  color: var(--ir-text-body);
+  background: var(--ir-muted-surface);
+}
+.ql-snow .ql-picker-item.ql-selected {
+  font-weight: 600;
+  color: var(--ir-primary);
+}
+
+/* ── Editor area ── */
+.ql-editor {
+  min-height: var(--ql-min-height, 80px);
+  max-height: var(--ql-max-height, none);
+  padding: 10px 12px;
+  overflow-y: auto;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--ir-text-body);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.ql-editor.ql-blank::before {
+  right: 12px;
+  left: 12px;
+  font-style: normal;
+  color: var(--ir-text-muted);
+}
+
+/* Editor content formatting */
+.ql-editor strong,
+.ql-editor b {
+  font-weight: 600;
+}
+.ql-editor em,
+.ql-editor i {
+  font-style: italic;
+}
+.ql-editor u {
+  text-decoration: underline;
+}
+.ql-editor s {
+  text-decoration: line-through;
+}
+.ql-editor a {
+  color: var(--ir-primary);
+  text-decoration: underline;
+}
+.ql-editor blockquote {
+  padding-left: 12px;
+  margin: 6px 0;
+  font-style: italic;
+  color: var(--ir-text-muted);
+  border-left: 3px solid var(--ir-border);
+}
+.ql-editor pre.ql-syntax {
+  padding: 10px 12px;
+  margin: 6px 0;
+  overflow-x: auto;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: var(--ir-text-body);
+  word-break: break-word;
+  white-space: pre-wrap;
+  background: var(--ir-muted-surface);
+  border-radius: 4px;
+}
+.ql-editor code {
+  padding: 1px 4px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: var(--ir-text-body);
+  background: var(--ir-muted-surface);
+  border-radius: 3px;
+}
+.ql-editor ol,
+.ql-editor ul {
+  padding-left: 1.5rem;
+  margin: 4px 0;
+}
+.ql-editor li {
+  margin: 2px 0;
+}
+.ql-editor p {
+  margin: 0 0 4px;
+}
+.ql-editor p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Link tooltip popup ── */
+.ql-snow .ql-tooltip {
+  z-index: 100;
+  padding: 6px 10px;
+  color: var(--ir-text-body);
+  white-space: nowrap;
+  background: var(--ir-surface);
+  border: 1px solid var(--ir-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+.ql-snow .ql-tooltip::before {
+  margin-right: 8px;
+  font-size: 0.75rem;
+  line-height: 26px;
+  color: var(--ir-text-muted);
+  content: "URL:";
+}
+.ql-snow .ql-tooltip input[type="text"] {
+  width: 180px;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 0.8125rem;
+  color: var(--ir-text-body);
+  outline: none;
+  background: var(--ir-surface);
+  border: 1px solid var(--ir-border);
+  border-radius: 3px;
+}
+.ql-snow .ql-tooltip input[type="text"]:focus {
+  border-color: var(--ir-primary);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--ir-primary) 20%, transparent);
+}
+.ql-snow .ql-tooltip a.ql-action,
+.ql-snow .ql-tooltip a.ql-remove {
+  margin-left: 8px;
+  font-size: 0.75rem;
+  color: var(--ir-primary);
+  text-decoration: none;
+  cursor: pointer;
+}
+.ql-snow .ql-tooltip a.ql-action::after {
+  content: "Edit";
+}
+.ql-snow .ql-tooltip.ql-editing a.ql-action::after {
+  content: "Save";
+}
+.ql-snow .ql-tooltip a.ql-remove::before {
+  margin-left: 8px;
+  color: var(--ir-danger);
+  content: "Remove";
+}
+.ql-snow .ql-tooltip[data-mode="link"]::before {
+  content: "Link URL:";
+}
+.ql-snow .ql-tooltip[data-mode="link"].ql-link-invalid::before {
+  color: var(--ir-danger);
+  content: "Enter a valid URL:";
+}
+.ql-snow .ql-tooltip.ql-link-invalid input[type="text"] {
+  border-color: var(--ir-danger);
+}
+
+/* Comment body rendered HTML */
+.comment-body {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.comment-body img {
+  max-width: 100%;
+  height: auto;
+  cursor: zoom-in;
+  border-radius: var(--radius-ir-md);
+}
+.comment-body p {
+  margin: 0 0 0.25rem;
+}
+.comment-body p:last-child {
+  margin-bottom: 0;
+}
+.comment-body strong {
+  font-weight: 600;
+}
+.comment-body em {
+  font-style: italic;
+}
+.comment-body a {
+  color: var(--ir-primary);
+  text-decoration: underline;
+}
+
+/* Lists — Quill 2 renders BOTH bullet and numbered lists as <ol> with
+   <li data-list="bullet|ordered"> and draws the marker via CSS counters +
+   ::before (not native list-style). Replicate that model here so posted lists
+   show their bullets/numbers and indentation. Plain <ul>/<ol> from older or
+   non-Quill content still gets a native disc/decimal via the fallback below. */
+.comment-body {
+  counter-reset: list-0 list-1 list-2 list-3 list-4 list-5 list-6 list-7 list-8
+    list-9;
+}
+.comment-body ul,
+.comment-body ol {
+  padding-left: 1.5em;
+  margin: 0.25rem 0;
+}
+.comment-body li {
+  margin: 0.125rem 0;
+}
+/* Fallback for plain, non-Quill list markup */
+.comment-body ul > li:not([data-list]) {
+  list-style: disc;
+}
+.comment-body ol > li:not([data-list]) {
+  list-style: decimal;
+}
+/* Reset numbering when a block (paragraph/heading/etc.) breaks between lists */
+.comment-body p,
+.comment-body h1,
+.comment-body h2,
+.comment-body h3,
+.comment-body h4,
+.comment-body h5,
+.comment-body h6,
+.comment-body pre,
+.comment-body blockquote {
+  counter-reset: list-0 list-1 list-2 list-3 list-4 list-5 list-6 list-7 list-8
+    list-9;
+}
+/* Quill list items: suppress native marker, draw our own via ::before */
+.comment-body li[data-list] {
+  position: relative;
+  padding-left: 1.5em;
+  list-style-type: none;
+  counter-reset: list-1 list-2 list-3 list-4 list-5 list-6 list-7 list-8 list-9;
+}
+/* Quill inserts an empty <span class="ql-ui"> marker node in the editor; hide
+   it on display so it never adds stray width next to our own marker. */
+.comment-body .ql-code-block-container > .ql-ui,
+.comment-body li[data-list] > .ql-ui {
+  display: none;
+}
+.comment-body li[data-list]::before {
+  display: inline-block;
+  width: 1.2em;
+  margin-right: 0.3em;
+  margin-left: -1.5em;
+  text-align: right;
+  white-space: nowrap;
+}
+.comment-body li[data-list="bullet"]::before {
+  content: "\2022";
+}
+.comment-body li[data-list="ordered"] {
+  counter-increment: list-0;
+}
+.comment-body li[data-list="ordered"]::before {
+  content: counter(list-0, decimal) ". ";
+}
+.comment-body li[data-list="ordered"].ql-indent-1 {
+  counter-increment: list-1;
+}
+.comment-body li[data-list="ordered"].ql-indent-1::before {
+  content: counter(list-1, lower-alpha) ". ";
+}
+.comment-body li[data-list="ordered"].ql-indent-2 {
+  counter-increment: list-2;
+}
+.comment-body li[data-list="ordered"].ql-indent-2::before {
+  content: counter(list-2, lower-roman) ". ";
+}
+.comment-body li[data-list="ordered"].ql-indent-3 {
+  counter-increment: list-3;
+}
+.comment-body li[data-list="ordered"].ql-indent-3::before {
+  content: counter(list-3, decimal) ". ";
+}
+/* Indentation — Quill applies ql-indent-N to paragraphs and list items */
+.comment-body .ql-indent-1 {
+  padding-left: 3em;
+}
+.comment-body li.ql-indent-1 {
+  padding-left: 4.5em;
+}
+.comment-body .ql-indent-2 {
+  padding-left: 6em;
+}
+.comment-body li.ql-indent-2 {
+  padding-left: 7.5em;
+}
+.comment-body .ql-indent-3 {
+  padding-left: 9em;
+}
+.comment-body li.ql-indent-3 {
+  padding-left: 10.5em;
+}
+.comment-body .ql-indent-4 {
+  padding-left: 12em;
+}
+.comment-body li.ql-indent-4 {
+  padding-left: 13.5em;
+}
+.comment-body .ql-indent-5 {
+  padding-left: 15em;
+}
+.comment-body li.ql-indent-5 {
+  padding-left: 16.5em;
+}
+/* Rich formats produced by the Quill editor (code, quotes, headings) must
+   render with the same styling they had in the editor — otherwise posted code
+   blocks look like plain text. */
+.comment-body pre,
+.comment-body pre.ql-syntax,
+.comment-body .ql-code-block-container {
+  padding: 10px 12px;
+  margin: 0.375rem 0;
+  overflow-x: auto;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: var(--ir-text-body);
+  word-break: break-word;
+  white-space: pre-wrap;
+  background: var(--ir-muted-surface);
+  border-radius: 4px;
+}
+/* Quill 2 code blocks: <div class="ql-code-block-container"> wrapping one
+   <div class="ql-code-block"> per line. Keep each line on its own row. */
+.comment-body .ql-code-block {
+  font-family: ui-monospace, monospace;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+.comment-body code {
+  padding: 1px 4px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  color: var(--ir-text-body);
+  background: var(--ir-muted-surface);
+  border-radius: 3px;
+}
+.comment-body pre code {
+  padding: 0;
+  background: transparent;
+}
+.comment-body blockquote {
+  padding-left: 12px;
+  margin: 0.375rem 0;
+  font-style: italic;
+  color: var(--ir-text-muted);
+  border-left: 3px solid var(--ir-border);
+}
+.comment-body h1,
+.comment-body h2,
+.comment-body h3 {
+  margin: 0.5rem 0 0.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.comment-body h1 {
+  font-size: 1.125rem;
+}
+.comment-body h2 {
+  font-size: 1rem;
+}
+.comment-body h3 {
+  font-size: 0.9375rem;
+}
+/* Inline images (e.g. images uploaded into a comment) render responsively. */
+.comment-body img {
+  max-width: 100%;
+  height: auto;
+  margin: 0.5rem 0;
+  border: 1px solid var(--ir-border);
+  border-radius: 4px;
+}

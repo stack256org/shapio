@@ -1,0 +1,48 @@
+name: Feature request
+description: Suggest a capability Shapio doesn't have yet.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: >
+        Describe the situation, not the solution. What are you doing today, and where
+        does it break down? This is the part that decides whether a feature gets built.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like it to do?
+      description: Your proposed behaviour, if you have one in mind.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Workarounds you've tried
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the app?
+      options:
+        - Public portal (roadmap, boards, changelog, voting)
+        - Workspace / Admin app
+        - Team members & invites
+        - Feedback posts & comments
+        - Notifications
+        - Platform Admin (/orbit)
+        - Install, Docker, or deployment
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Would you be willing to work on it?
+      description: Entirely optional — this doesn't affect whether the idea is accepted.
+      options:
+        - label: I'd be up for opening a PR

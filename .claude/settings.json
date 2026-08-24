@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(psql \"postgresql://postgres:1111@localhost:5432/idearoads\" -c \"select identifier from verification order by created_at desc limit 1;\")"
+    ]
+  }
+}

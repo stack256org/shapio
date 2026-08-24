@@ -1,0 +1,82 @@
+name: Bug report
+description: Something in Shapio doesn't work the way it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file this. **Do not report security
+        vulnerabilities here** — open a private security advisory instead.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Sign in as a Brand Admin
+        2. Open a feedback board
+        3. …
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: An image tag or a commit SHA.
+      placeholder: "0.1.0 / sha-a1b2c3d / main"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How are you running it?
+      options:
+        - Docker Compose, prebuilt image (docker-compose.yml)
+        - Docker Compose, own database (docker-compose.external-db.yml)
+        - Docker Compose, built from source (docker-compose.build.yml)
+        - Local development (pnpm dev)
+        - Other / platform PaaS (Railway, Render, Fly, Coolify, Dokploy…)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the app?
+      options:
+        - Public portal (roadmap, boards, changelog, voting)
+        - Workspace / Admin app
+        - Team members & invites
+        - Feedback posts & comments
+        - Notifications
+        - Background worker / email
+        - Platform Admin (/orbit)
+        - Install, Docker, or migrations
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: >
+        `docker compose logs app worker` — or the browser console for a UI bug.
+        **Redact `APP_SECRET`, SMTP credentials, and any customer email addresses.**
+      render: shell
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, config details (with secrets removed), or things you already ruled out.
