@@ -54,71 +54,197 @@
     {
       "idx": 7,
       "version": "7",
-      "when": 1784721130793,
-      "tag": "0016_sour_donald_blake",
+      "when": 1751000000000,
+      "tag": "0007_comment_reactions",
       "breakpoints": true
     },
     {
       "idx": 8,
+      "version": "7",
+      "when": 1751000100000,
+      "tag": "0008_categories_statuses",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1751000200000,
+      "tag": "0009_changelog",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1751000300000,
+      "tag": "0010_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1751000400000,
+      "tag": "0011_moderation",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1751000500000,
+      "tag": "0012_orbit",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1751000600000,
+      "tag": "0013_backfill_votes_user_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1751000700000,
+      "tag": "0014_post_assignment_and_image",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1751000800000,
+      "tag": "0015_changelog_comments_and_cover",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1751000900000,
+      "tag": "0016_post_draft",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1751001000000,
+      "tag": "0016_sour_donald_blake",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1751001100000,
+      "tag": "0017_default_categories",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1751001200000,
+      "tag": "0018_changelog_comment_threads",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1751001300000,
+      "tag": "0019_changelog_labels",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1751001400000,
+      "tag": "0020_roadmap_manual_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1751001500000,
+      "tag": "0021_status_show_on_roadmap",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1751001600000,
+      "tag": "0022_status_show_on_public_feed",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1751001700000,
+      "tag": "0023_category_default",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1751001800000,
+      "tag": "0024_embed_board",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1751001900000,
+      "tag": "0025_drop_api_keys_and_webhooks",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
       "version": "7",
       "when": 1784721130794,
       "tag": "0026_embed_widget_settings",
       "breakpoints": true
     },
     {
-      "idx": 9,
+      "idx": 28,
       "version": "7",
       "when": 1784721130795,
       "tag": "0027_workspace_status_system",
       "breakpoints": true
     },
     {
-      "idx": 10,
+      "idx": 29,
       "version": "7",
       "when": 1785218101984,
       "tag": "0028_remove_unused_feature_flags",
       "breakpoints": true
     },
     {
-      "idx": 11,
+      "idx": 30,
       "version": "7",
       "when": 1785300000000,
       "tag": "0029_account_password",
       "breakpoints": true
     },
     {
-      "idx": 12,
+      "idx": 31,
       "version": "7",
       "when": 1785400000000,
       "tag": "0030_portal_guest_verification",
       "breakpoints": true
     },
     {
-      "idx": 13,
+      "idx": 32,
       "version": "7",
       "when": 1785400100000,
       "tag": "0031_comments_merged_from_post",
       "breakpoints": true
     },
     {
-      "idx": 14,
+      "idx": 33,
       "version": "7",
       "when": 1785990187638,
       "tag": "0032_integration_settings",
       "breakpoints": true
     },
     {
-      "idx": 15,
+      "idx": 34,
       "version": "7",
       "when": 1786000000000,
       "tag": "0033_workspace_requires_integration_setup",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "7",
-      "when": 1786971024529,
-      "tag": "0016_cute_valeria_richards",
       "breakpoints": true
     }
   ]

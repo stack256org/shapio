@@ -12,7 +12,19 @@ const execFileAsync = promisify(execFile);
 // creates the test database, and syncs its schema — so `pnpm test` works
 // standalone with no manual setup, in local dev or CI alike.
 export default async function globalSetup() {
+  // Same override as vitest.config.ts (this runs in its own process, so it
+  // needs its own copy of that fix): clear these first so .env.test's values
+  // always win, even when the parent job already set its own DATABASE_URL.
   if (existsSync(".env.test")) {
+    for (const key of [
+      "DATABASE_URL",
+      "APP_SECRET",
+      "NEXT_PUBLIC_APP_URL",
+      "NODE_ENV",
+      "ENCRYPTION_KEY",
+    ]) {
+      delete process.env[key];
+    }
     process.loadEnvFile(".env.test");
   }
 
@@ -47,12 +59,11 @@ export default async function globalSetup() {
   await pg.createDatabase(database);
 
   // Sync the schema directly from db/schema/*.ts (drizzle-kit push), rather
-  // than replaying db/migrations/*.sql. The migration history's snapshot
-  // tracking is currently out of sync with the real schema (a pre-existing
-  // issue, unrelated to this test suite — see conversation notes), so
-  // replaying it produces bogus duplicate-table errors even on a fresh
-  // database. schema.ts is the actual source of truth for what the app code
-  // expects, so pushing directly from it is what keeps these tests correct.
+  // than replaying db/migrations/*.sql — push is instant and doesn't require
+  // stepping through migration history, which is what actually matters here:
+  // this suite only cares about the current schema shape, not how it was
+  // reached. (The "migrations apply cleanly" CI job separately verifies the
+  // migration history itself replays correctly on a fresh database.)
   //
   // CRITICAL: drizzle-kit auto-loads `.env` and lets it OVERRIDE the env it is
   // spawned with, so passing DATABASE_URL here is silently ignored — drizzle-kit
