@@ -27,12 +27,26 @@ export type IntegrationSettingsRow = typeof integrationSettings.$inferSelect;
 
 export const getIntegrationSettingsRow = cache(
   async (): Promise<IntegrationSettingsRow | null> => {
-    const [row] = await db
-      .select()
-      .from(integrationSettings)
-      .where(eq(integrationSettings.id, 1))
-      .limit(1);
-    return row ?? null;
+    try {
+      const [row] = await db
+        .select()
+        .from(integrationSettings)
+        .where(eq(integrationSettings.id, 1))
+        .limit(1);
+      return row ?? null;
+    } catch (error) {
+      // Every caller already treats a null row as "fall back to env", so
+      // degrade the same way a missing row would rather than taking the
+      // whole app (or, worse, the build — lib/auth.ts reads this at
+      // module-evaluation time) down. Most likely cause: the DB isn't
+      // reachable yet, e.g. the Docker image build, which only ever has
+      // placeholder credentials (see Dockerfile).
+      console.error(
+        "[integration-settings] failed to read settings row — falling back to env",
+        error
+      );
+      return null;
+    }
   }
 );
 

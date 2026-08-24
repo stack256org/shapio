@@ -21,7 +21,10 @@
       "!next-env.d.ts",
       "!workers/**/worker-configuration.d.ts",
       "!workers/**/.wrangler",
-      "!Kanbanica-main"
+      "!Kanbanica-main",
+      "!public/logo.svg",
+      "!public/logo-dark.svg",
+      "!public/logo-light.svg"
     ]
   },
   "linter": {
