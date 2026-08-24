@@ -1,0 +1,48 @@
+FROM node:22-bookworm-slim AS deps
+
+WORKDIR /app
+
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile --prod
+
+FROM node:22-bookworm-slim AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# No corepack/pnpm at runtime. Corepack would try to download & initialize the
+# package manager into ~/.cache on first `pnpm` call, which fails for the
+# non-root user on a fresh host (EACCES). Everything needed is already baked in
+# node_modules at build time, so we run the bundled `tsx` binary directly.
+# uid/gid 1001 is deliberate and must not change (see Dockerfile).
+RUN groupadd --system --gid 1001 shapio \
+  && useradd --system --uid 1001 --gid shapio shapio
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json tsconfig.json ./
+COPY config ./config
+COPY db ./db
+COPY lib ./lib
+COPY scripts ./scripts
+
+USER shapio
+
+# Default command: run the worker. The compose `migrate` service overrides this
+# to run scripts/migrate.ts. Both invoke tsx directly (no pnpm/corepack).
+CMD ["/app/node_modules/.bin/tsx", "scripts/worker.ts"]
+
+# OCI metadata. Renders on the GitHub Packages page for this image and links
+# it back to the repository. No HEALTHCHECK here — this image runs the
+# background worker or the one-shot migrate step, neither of which serves
+# HTTP, so the app image's /api/health probe doesn't apply.
+LABEL org.opencontainers.image.title="Shapio (worker)" \
+      org.opencontainers.image.description="Self-hosted product roadmap / feedback software." \
+      org.opencontainers.image.source="https://github.com/stack256org/shapio" \
+      org.opencontainers.image.documentation="https://github.com/stack256org/shapio#readme" \
+      org.opencontainers.image.licenses="MIT"

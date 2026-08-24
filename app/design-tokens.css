@@ -1,0 +1,280 @@
+/* ==========================================================================
+   Shapio Design System — Design Tokens (Phase 1)
+   ==========================================================================
+   Centralized, namespaced ("ir-" — legacy internal namespace, predates the
+   Shapio rename; left as-is, not part of this rename) token layer for the UI/UX
+   redesign — genuinely product-specific, independent of daisyUI's own theme
+   vocabulary (globals.css). The app's legacy shadcn token set has since been
+   removed; unconverted pages now use daisyUI's semantic classes directly
+   (bg-primary, text-base-content, ...) instead.
+
+   Usage: once a page/component is redesigned, swap its plain Tailwind/daisyUI
+   utility classes (bg-primary, text-base-content, rounded-lg, shadow-md, ...)
+   for the ir- equivalents documented here (bg-ir-primary, text-ir-heading,
+   rounded-ir-card, shadow-ir-md, ...).
+
+   Full reference + rationale: /DESIGN-TOKENS.md
+   ========================================================================== */
+
+@theme inline {
+  /* ── Color ────────────────────────────────────────────────────────── */
+  --color-ir-primary: var(--ir-primary);
+  --color-ir-primary-hover: var(--ir-primary-hover);
+  --color-ir-primary-light: var(--ir-primary-light);
+  --color-ir-primary-foreground: var(--ir-primary-foreground);
+
+  --color-ir-background: var(--ir-background);
+  --color-ir-surface: var(--ir-surface);
+  --color-ir-border: var(--ir-border);
+  --color-ir-muted-surface: var(--ir-muted-surface);
+
+  --color-ir-heading: var(--ir-text-heading);
+  --color-ir-body: var(--ir-text-body);
+  --color-ir-muted: var(--ir-text-muted);
+
+  --color-ir-success: var(--ir-success);
+  --color-ir-success-foreground: var(--ir-success-foreground);
+  --color-ir-warning: var(--ir-warning);
+  --color-ir-warning-foreground: var(--ir-warning-foreground);
+  --color-ir-danger: var(--ir-danger);
+  --color-ir-danger-foreground: var(--ir-danger-foreground);
+
+  /* ── Typography ───────────────────────────────────────────────────── */
+  --font-ir-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-ir-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Heading scale */
+  --text-ir-h1: 2.25rem; /* 36px */
+  --text-ir-h1--line-height: 2.75rem; /* 44px */
+  --text-ir-h1--font-weight: 600;
+  --text-ir-h2: 1.875rem; /* 30px */
+  --text-ir-h2--line-height: 2.375rem; /* 38px */
+  --text-ir-h2--font-weight: 600;
+  --text-ir-h3: 1.5rem; /* 24px */
+  --text-ir-h3--line-height: 2rem; /* 32px */
+  --text-ir-h3--font-weight: 600;
+  --text-ir-h4: 1.25rem; /* 20px */
+  --text-ir-h4--line-height: 1.75rem; /* 28px */
+  --text-ir-h4--font-weight: 600;
+
+  /* Body scale */
+  --text-ir-body-lg: 1.125rem; /* 18px */
+  --text-ir-body-lg--line-height: 1.75rem; /* 28px */
+  --text-ir-body-md: 1rem; /* 16px */
+  --text-ir-body-md--line-height: 1.5rem; /* 24px */
+  --text-ir-body-sm: 0.875rem; /* 14px */
+  --text-ir-body-sm--line-height: 1.25rem; /* 20px */
+  --text-ir-body-xs: 0.75rem; /* 12px */
+  --text-ir-body-xs--line-height: 1rem; /* 16px */
+
+  /* ── Spacing scale (4px base unit) ──────────────────────────────────
+     Generates p-ir-*, m-ir-*, gap-ir-*, space-ir-*, inset-ir-*, etc.    */
+  --spacing-ir-xs: 0.25rem; /* 4px  */
+  --spacing-ir-sm: 0.5rem; /* 8px  */
+  --spacing-ir-md: 0.75rem; /* 12px */
+  --spacing-ir-lg: 1rem; /* 16px */
+  --spacing-ir-xl: 1.5rem; /* 24px */
+  --spacing-ir-2xl: 2rem; /* 32px */
+  --spacing-ir-3xl: 2.5rem; /* 40px */
+  --spacing-ir-4xl: 3rem; /* 48px */
+
+  /* ── Border radius scale ─────────────────────────────────────────── */
+  --radius-ir-xs: 0.25rem; /* 4px  */
+  --radius-ir-sm: 0.375rem; /* 6px  */
+  --radius-ir-md: 0.5rem; /* 8px  */
+  --radius-ir-lg: 0.75rem; /* 12px */
+  --radius-ir-xl: 1rem; /* 16px */
+  --radius-ir-full: 9999px;
+
+  /* Component aliases — the standardized radius per element type */
+  --radius-ir-button: var(--radius-ir-sm);
+  --radius-ir-input: var(--radius-ir-sm);
+  --radius-ir-card: var(--radius-ir-lg);
+
+  /* ── Shadow scale ─────────────────────────────────────────────────── */
+  --shadow-ir-xs: 0 1px 2px 0 rgb(31 41 55 / 0.04);
+  --shadow-ir-sm:
+    0 1px 3px 0 rgb(31 41 55 / 0.06), 0 1px 2px -1px rgb(31 41 55 / 0.04);
+  --shadow-ir-md:
+    0 4px 6px -1px rgb(31 41 55 / 0.08), 0 2px 4px -2px rgb(31 41 55 / 0.06);
+  --shadow-ir-lg:
+    0 10px 15px -3px rgb(31 41 55 / 0.08), 0 4px 6px -4px rgb(31 41 55 / 0.05);
+  --shadow-ir-xl:
+    0 20px 25px -5px rgb(31 41 55 / 0.08), 0 8px 10px -6px rgb(31 41 55 / 0.04);
+
+  /* ── Easing (real Tailwind theme namespace → ease-ir-* utilities) ─── */
+  --ease-ir-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-ir-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --ease-ir-accelerate: cubic-bezier(0.4, 0, 1, 1);
+}
+
+:root {
+  /* ── Color — light mode ──────────────────────────────────────────── */
+  --ir-primary: #1297fd;
+  --ir-primary-hover: #0b84e8;
+  --ir-primary-light: #8bcaf9;
+  --ir-primary-foreground: #ffffff;
+
+  --ir-background: #fcfcfc;
+  --ir-surface: #ffffff;
+  --ir-border: #e3e4e6;
+  --ir-muted-surface: #f5f7fa;
+
+  --ir-text-heading: #1f2937;
+  --ir-text-body: #4b5563;
+  --ir-text-muted: #6b7280;
+
+  --ir-success: #22c55e;
+  --ir-success-foreground: #052e1c;
+  --ir-warning: #f59e0b;
+  --ir-warning-foreground: #451a03;
+  --ir-danger: #ef4444;
+  --ir-danger-foreground: #450a0a;
+
+  /* ── Z-index scale ── plain custom properties (Tailwind v4 z-*
+     utilities take bare numbers directly, e.g. z-[var(--z-ir-modal)]) ── */
+  --z-ir-base: 0;
+  --z-ir-dropdown: 10;
+  --z-ir-sticky: 20;
+  --z-ir-overlay: 30;
+  --z-ir-modal: 40;
+  --z-ir-popover: 50;
+  --z-ir-toast: 60;
+  --z-ir-banner: 9999;
+
+  /* ── Animation duration scale ── plain custom properties (Tailwind
+     v4 duration-* utilities also accept bare ms values directly, e.g.
+     duration-150); tokens exist for use in custom CSS / inline styles ── */
+  --duration-ir-fast: 100ms;
+  --duration-ir-base: 150ms;
+  --duration-ir-slow: 200ms;
+  --duration-ir-slower: 300ms;
+}
+
+.dark {
+  /* ── Color — dark mode ────────────────────────────────────────────
+     No dark palette was specified alongside the light tokens above;
+     these are proposed counterparts kept in the same hue families.
+     Confirm with design before adopting on any dark-mode surface. ── */
+  --ir-primary: #1297fd;
+  --ir-primary-hover: #3aa9fd;
+  --ir-primary-light: #1b3a5c;
+  --ir-primary-foreground: #ffffff;
+
+  --ir-background: #0f1115;
+  --ir-surface: #171a1f;
+  --ir-border: #2a2e35;
+  --ir-muted-surface: #1c1f25;
+
+  --ir-text-heading: #f3f4f6;
+  --ir-text-body: #c3c7ce;
+  --ir-text-muted: #6b7280;
+
+  --ir-success: #34d399;
+  --ir-success-foreground: #052e1c;
+  --ir-warning: #fbbf24;
+  --ir-warning-foreground: #451a03;
+  --ir-danger: #f87171;
+  --ir-danger-foreground: #450a0a;
+}
+
+/* ==========================================================================
+   Reusable utility classes
+   ==========================================================================
+   Composed, component-level helpers built from the tokens above. Opt-in —
+   nothing currently rendered references these, so adding them here changes
+   no existing page. Intended for use as the redesign adopts new surfaces.
+   ========================================================================== */
+
+@layer components {
+  .ir-heading-1 {
+    font-family: var(--font-ir-sans);
+    font-size: var(--text-ir-h1);
+    font-weight: var(--text-ir-h1--font-weight);
+    line-height: var(--text-ir-h1--line-height);
+    color: var(--ir-text-heading);
+  }
+  .ir-heading-2 {
+    font-family: var(--font-ir-sans);
+    font-size: var(--text-ir-h2);
+    font-weight: var(--text-ir-h2--font-weight);
+    line-height: var(--text-ir-h2--line-height);
+    color: var(--ir-text-heading);
+  }
+  .ir-heading-3 {
+    font-family: var(--font-ir-sans);
+    font-size: var(--text-ir-h3);
+    font-weight: var(--text-ir-h3--font-weight);
+    line-height: var(--text-ir-h3--line-height);
+    color: var(--ir-text-heading);
+  }
+  .ir-heading-4 {
+    font-family: var(--font-ir-sans);
+    font-size: var(--text-ir-h4);
+    font-weight: var(--text-ir-h4--font-weight);
+    line-height: var(--text-ir-h4--line-height);
+    color: var(--ir-text-heading);
+  }
+  .ir-body {
+    font-family: var(--font-ir-sans);
+    font-size: var(--text-ir-body-md);
+    line-height: var(--text-ir-body-md--line-height);
+    color: var(--ir-text-body);
+  }
+  .ir-body-sm {
+    font-family: var(--font-ir-sans);
+    font-size: var(--text-ir-body-sm);
+    line-height: var(--text-ir-body-sm--line-height);
+    color: var(--ir-text-body);
+  }
+
+  /* Surface primitives */
+  .ir-card {
+    background-color: var(--ir-surface);
+    border: 1px solid var(--ir-border);
+    border-radius: var(--radius-ir-card);
+    box-shadow: var(--shadow-ir-xs);
+  }
+  .ir-panel {
+    background-color: var(--ir-muted-surface);
+    border: 1px solid var(--ir-border);
+    border-radius: var(--radius-ir-md);
+  }
+
+  /* Interactive primitives */
+  .ir-btn-base {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-ir-sans);
+    font-size: var(--text-ir-body-sm);
+    font-weight: 500;
+    line-height: var(--text-ir-body-sm--line-height);
+    border-radius: var(--radius-ir-button);
+    transition-timing-function: var(--ease-ir-standard);
+    transition-duration: var(--duration-ir-base);
+    transition-property: color, background-color, border-color, box-shadow;
+  }
+  .ir-btn-primary {
+    color: var(--ir-primary-foreground);
+    background-color: var(--ir-primary);
+  }
+  .ir-btn-primary:hover {
+    background-color: var(--ir-primary-hover);
+  }
+  .ir-input-base {
+    color: var(--ir-text-body);
+    background-color: var(--ir-surface);
+    border: 1px solid var(--ir-border);
+    border-radius: var(--radius-ir-input);
+    transition-timing-function: var(--ease-ir-standard);
+    transition-duration: var(--duration-ir-fast);
+    transition-property: border-color, box-shadow;
+  }
+  .ir-input-base:focus-visible {
+    outline: none;
+    border-color: var(--ir-primary);
+    box-shadow: 0 0 0 3px
+      color-mix(in oklab, var(--ir-primary) 20%, transparent);
+  }
+}

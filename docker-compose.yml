@@ -1,0 +1,145 @@
+# Shapio, the normal way to run it. PostgreSQL included, nothing built locally.
+#
+#   curl -O https://raw.githubusercontent.com/stack256org/shapio/main/docker-compose.yml
+#   curl -o .env https://raw.githubusercontent.com/stack256org/shapio/main/.env.docker.example
+#   # edit .env: set APP_SECRET (openssl rand -base64 36) and NEXT_PUBLIC_APP_URL
+#   docker compose up -d
+#
+# This pulls the app and worker images published by .github/workflows/release.yml
+# for both Intel and ARM, rather than compiling Next.js on your server — which on
+# a small machine is slow and memory-hungry.
+#
+# The other two files are alternatives, never used alongside this one:
+#   docker-compose.external-db.yml   your own PostgreSQL instead of the bundled one
+#   docker-compose.build.yml         build both images from source, for changing the code
+#
+# Pin a version in production, because `latest` moves on every release:
+#   IMAGE_TAG=0.1.0 docker compose up -d
+#
+# Port 3000 already taken? Use APP_PORT, never PORT. See the app service below.
+#
+# Your data lives in two named volumes, shapio_pgdata and shapio_uploads. They
+# are pinned to literal names and survive `down`, `pull` and `up -d`. Only
+# `down -v` destroys them.
+
+x-app-image: &app-image ${SHAPIO_IMAGE:-ghcr.io/stack256org/shapio}:${IMAGE_TAG:-latest}
+x-worker-image: &worker-image ${SHAPIO_WORKER_IMAGE:-ghcr.io/stack256org/shapio-worker}:${IMAGE_TAG:-latest}
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-shapio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shapio}
+      POSTGRES_DB: ${POSTGRES_DB:-shapio}
+      # Pinned explicitly, NOT left to the image default. The official image's
+      # default data directory changed in Postgres 18. If that default ever
+      # moves under us, the volume below would mount at the wrong path and the
+      # database would come up EMPTY — the old data isn't deleted, just
+      # orphaned and invisible, which looks exactly like "the upgrade wiped my
+      # database". Setting it here makes the path independent of the image tag.
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shapio} -d ${POSTGRES_DB:-shapio}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Runs as root for a fraction of a second, purely to hand the uploads volume to
+  # the unprivileged `shapio` user (uid/gid 1001) that the app/worker images run
+  # as. Exists because Docker gives a *pre-existing* named volume root
+  # ownership: any deployment created before the images went non-root has a
+  # root-owned volume, and attachment writes would start failing with EACCES
+  # after the upgrade. A fresh volume inherits ownership from the image
+  # directory and is already correct — chown is then a no-op. Either way this
+  # runs unconditionally and idempotently, so no operator has to remember a
+  # manual migration step.
+  #
+  # `alpine` rather than the app image so it needs nothing pulled beyond itself
+  # and cannot be affected by app-level env or entrypoint changes.
+  init-uploads:
+    image: alpine:3
+    user: "0:0"
+    command: >
+      sh -c "chown -R 1001:1001 /app/public/uploads &&
+             echo 'uploads volume ownership set to uid/gid 1001'"
+    volumes:
+      - uploads:/app/public/uploads
+    restart: "no"
+
+  migrate:
+    image: *worker-image
+    pull_policy: always
+    command: ["/app/node_modules/.bin/tsx", "scripts/migrate.ts"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      init-uploads:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    image: *app-image
+    pull_policy: always
+    restart: unless-stopped
+    env_file: .env
+    # Published to the host so a fresh `docker compose up -d` is reachable at
+    # localhost:3000 with no extra steps. Behind a reverse proxy (Dokploy,
+    # Traefik, Caddy) that reaches the app over the Docker network instead,
+    # drop this and use `expose: ["3000"]` to avoid the redundant host bind.
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    # Belt and braces: pin the internal port so a stray PORT in .env (env_file
+    # passes every var into the container, and `next start` itself consumes
+    # PORT) can never move it and break both this mapping and the image's
+    # HEALTHCHECK, which probes :3000.
+    environment:
+      PORT: 3000
+    volumes:
+      - uploads:/app/public/uploads
+    depends_on:
+      init-uploads:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # The image ships its own HEALTHCHECK (GET /api/health) — no need to
+    # redeclare it here.
+
+  worker:
+    image: *worker-image
+    pull_policy: always
+    command: ["/app/node_modules/.bin/tsx", "scripts/worker.ts"]
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - uploads:/app/public/uploads
+    depends_on:
+      init-uploads:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  # Pinned to literal names (not just "pgdata"/"uploads") on purpose: Compose
+  # namespaces unnamed volumes as "<compose-project-name>_<volume-name>", and
+  # some deploy tools (observed with Dokploy) don't keep the project name
+  # stable across redeploys — that silently creates a NEW, empty volume each
+  # time, orphaning the old one (DB data or uploads) without any error. An
+  # upload appears to work right after it's made (same container, same
+  # volume still mounted) but is gone after the next redeploy, because the
+  # redeployed container mounted a fresh, empty volume instead of the one
+  # holding the file. Pinning guarantees every deploy reattaches to the same
+  # volume.
+  pgdata:
+    name: shapio_pgdata
+  uploads:
+    name: shapio_uploads
