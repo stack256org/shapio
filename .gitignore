@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+public/uploads
+Kanbanica-main
+
+# Next.js
+.shapio-postgres
+.next/
+out/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Locally stored uploads (only used when STORAGE_S3_* isn't configured)
+/public/uploads/
+
+# pnpm
+.pnpm-store/
+
+# Ephemeral test database (spun up by the vitest global setup)
+.shapio-postgres-test/
+
+# Drizzle
+drizzle/meta/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Turbopack / Next.js cache
+.turbo/

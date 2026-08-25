@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.env
+.env.local
+.env.test
+.env*.local
+*.pem
+.DS_Store
+npm-debug.log*
+pnpm-debug.log*
+coverage
+.shapio-postgres-test
+public/uploads
+tsconfig.tsbuildinfo

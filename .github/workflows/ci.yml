@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      DATABASE_URL: postgresql://build:build@localhost:5432/build
+      APP_SECRET: ci-test-secret-not-for-production-use-32-chars-min
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      # Before `pnpm install`, deliberately: the script is dependency-free plain
+      # Node, and a stale README is a two-second failure that should not wait
+      # behind an install and a full Next build.
+      - name: README is in step with the version
+        run: pnpm docs:check
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  migrations:
+    name: Migrations apply cleanly
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Catches the failure mode that breaks self-hosters most often: a schema
+    # change committed without its generated migration, so the `migrate`
+    # service in docker-compose.yml dies on a fresh install.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: shapio
+          POSTGRES_PASSWORD: shapio
+          POSTGRES_DB: shapio_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shapio"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run migrations against a fresh database
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: postgresql://shapio:shapio@localhost:5432/shapio_ci
+
+      - name: Fail if the schema has uncommitted migrations
+        run: |
+          set -euo pipefail
+          pnpm db:generate
+          if ! git diff --quiet --exit-code db/migrations; then
+            echo "::error::db/schema changed without a generated migration."
+            echo "Run 'pnpm db:generate' and commit the result in db/migrations/."
+            git diff --stat db/migrations
+            exit 1
+          fi
+        env:
+          DATABASE_URL: postgresql://shapio:shapio@localhost:5432/shapio_ci
