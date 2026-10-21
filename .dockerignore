@@ -1,10 +1,13 @@
 node_modules
 .next
 .git
+# Real env files never enter the image (secrets are injected at runtime). The
+# two example templates stay: they are documentation, not configuration.
 .env
-.env.local
-.env.test
-.env*.local
+.env.*
+!.env.example
+!.env.docker.example
+.claude
 *.pem
 .DS_Store
 npm-debug.log*

@@ -8,8 +8,9 @@ import { normalizePgConnectionString } from "@/lib/pg-connection";
 //
 // `drizzle-kit` is a devDependency and is absent from --prod images, so we run
 // migrations with the runtime `drizzle-orm` migrator against ./db/migrations.
-// This is what the docker-compose `migrate` service invokes (via the worker
-// image, which already bundles db/migrations + tsx + drizzle-orm).
+// This is what the docker-compose `migrate` service invokes, and what the image's
+// entrypoint runs on boot when no command is given (see
+// scripts/docker-entrypoint.sh).
 //
 // With the bundled Postgres container, compose gates this on
 // `postgres: {condition: service_healthy}`. With an EXTERNAL database there is

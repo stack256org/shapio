@@ -93,10 +93,10 @@ export async function setUserPassword(
   await db.insert(account).values({
     id: randomUUID(),
     // Better Auth's own signUp.email stores the USER ID here for credential
-    // accounts, so match it. Sign-in itself only matches on providerId (see
-    // node_modules/better-auth/dist/api/routes/sign-in.mjs), but account
-    // linking/unlinking and the data export do read accountId — following the
-    // library's convention keeps those consistent.
+    // accounts, so match it. Since 1.7, sign-in requires it too (it looks up
+    // the credential account by providerId AND accountId === user.id, see
+    // node_modules/better-auth/dist/api/routes/sign-in.mjs), and account
+    // linking/unlinking and the data export read accountId as well.
     accountId: userId,
     createdAt: now,
     password: hashed,

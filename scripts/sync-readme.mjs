@@ -12,8 +12,7 @@ const readmePath = join(root, "README.md");
 
 // Lowercase, and matching release.yml's `images:` — registries reject capitals,
 // and that workflow lowercases github.repository for the same reason.
-const APP_IMAGE = "ghcr.io/stack256org/shapio";
-const WORKER_IMAGE = "ghcr.io/stack256org/shapio-worker";
+const IMAGE = "ghcr.io/stack256org/shapio";
 
 const { version } = JSON.parse(
   readFileSync(join(root, "package.json"), "utf8")
@@ -48,8 +47,7 @@ every change, expect rough edges), and a fixed \`sha-<short>\` per build. Each c
 for both Intel and ARM machines:
 
 \`\`\`bash
-docker pull ${APP_IMAGE}:${version}          # app
-docker pull ${WORKER_IMAGE}:${version}   # worker
+docker pull ${IMAGE}:${version}
 \`\`\``,
 };
 

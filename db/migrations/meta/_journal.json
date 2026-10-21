@@ -246,6 +246,20 @@
       "when": 1786000000000,
       "tag": "0033_workspace_requires_integration_setup",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1786100000000,
+      "tag": "0034_credential_account_id_user_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1786200000000,
+      "tag": "0035_posts_merged_into_id",
+      "breakpoints": true
     }
   ]
 }

@@ -21,23 +21,22 @@ beforeEach(async () => {
 });
 
 describe("derived roadmap (Sync ON) — status whitelist", () => {
-  it("only Planned / In Progress / Completed are columns by default", async () => {
+  it("only In Progress / Completed / Declined are columns by default", async () => {
     const owner = await createTestUser();
     const ws = await createTestWorkspace(owner.id, owner.email);
 
     const columns = await getDerivedRoadmap(ws.id, { isAdmin: true });
     expect(columns.map((c) => c.slug)).toEqual([
-      "planned",
       "in_progress",
       "completed",
+      "declined",
     ]);
-    // Draft/Open/Under Review/Closed must NEVER be roadmap columns.
-    expect(columns.map((c) => c.slug)).not.toContain("open");
-    expect(columns.map((c) => c.slug)).not.toContain("under_review");
-    expect(columns.map((c) => c.slug)).not.toContain("closed");
+    // Draft and In Review (intake) must NEVER be roadmap columns by default.
+    expect(columns.map((c) => c.slug)).not.toContain("draft");
+    expect(columns.map((c) => c.slug)).not.toContain("in_review");
   });
 
-  it("Open and Draft feedback never appear on the roadmap", async () => {
+  it("In Review and Draft feedback never appear on the roadmap", async () => {
     const owner = await createTestUser();
     const ws = await createTestWorkspace(owner.id, owner.email);
     const board = await createTestBoard({
@@ -45,38 +44,38 @@ describe("derived roadmap (Sync ON) — status whitelist", () => {
       createdBy: owner.id,
     });
 
-    const planned = await createTestPost({
+    const inProgress = await createTestPost({
       boardId: board.id,
       workspaceId: ws.id,
       authorId: owner.id,
       authorEmail: owner.email,
-      status: "planned",
+      status: "in_progress",
     });
-    // An "open" post — must not surface anywhere.
+    // An "in_review" (intake) post — must not surface anywhere.
     await createTestPost({
       boardId: board.id,
       workspaceId: ws.id,
       authorId: owner.id,
       authorEmail: owner.email,
-      status: "open",
+      status: "in_review",
     });
-    // A planned post that is still an unpublished DRAFT — must not surface.
+    // An in-progress post that is still an unpublished DRAFT — must not surface.
     const draft = await createTestPost({
       boardId: board.id,
       workspaceId: ws.id,
       authorId: owner.id,
       authorEmail: owner.email,
-      status: "planned",
+      status: "in_progress",
     });
     await db.update(posts).set({ isDraft: true }).where(eq(posts.id, draft.id));
-    // A planned post hidden/spam (isApproved = false) — must not surface, even
+    // An in-progress post hidden/spam (isApproved = false) — must not surface, even
     // in the admin/team view.
     const hidden = await createTestPost({
       boardId: board.id,
       workspaceId: ws.id,
       authorId: owner.id,
       authorEmail: owner.email,
-      status: "planned",
+      status: "in_progress",
     });
     await db
       .update(posts)
@@ -84,13 +83,13 @@ describe("derived roadmap (Sync ON) — status whitelist", () => {
       .where(eq(posts.id, hidden.id));
 
     const columns = await getDerivedRoadmap(ws.id, { isAdmin: true });
-    const plannedCol = columns.find((c) => c.slug === "planned")!;
-    const ids = plannedCol.posts.map((p) => p.id);
+    const inProgressCol = columns.find((c) => c.slug === "in_progress")!;
+    const ids = inProgressCol.posts.map((p) => p.id);
 
-    expect(ids).toContain(planned.id);
+    expect(ids).toContain(inProgress.id);
     expect(ids).not.toContain(draft.id); // draft excluded
     expect(ids).not.toContain(hidden.id); // spam/hidden excluded
-    // The "open" post is nowhere across all columns.
+    // The "in_review" post is nowhere across all columns.
     const allIds = columns.flatMap((c) => c.posts.map((p) => p.id));
     expect(allIds).toHaveLength(1);
   });
@@ -100,13 +99,13 @@ describe("derived roadmap (Sync ON) — status whitelist", () => {
     const ws = await createTestWorkspace(owner.id, owner.email);
 
     let columns = await getDerivedRoadmap(ws.id, { isAdmin: true });
-    expect(columns.map((c) => c.slug)).not.toContain("closed");
+    expect(columns.map((c) => c.slug)).not.toContain("in_review");
 
-    const closed = await getWorkspaceStatusBySlug(ws.id, "closed");
-    await updateWorkspaceStatus(closed!.id, { showOnRoadmap: true });
+    const inReview = await getWorkspaceStatusBySlug(ws.id, "in_review");
+    await updateWorkspaceStatus(inReview!.id, { showOnRoadmap: true });
 
     columns = await getDerivedRoadmap(ws.id, { isAdmin: true });
-    expect(columns.map((c) => c.slug)).toContain("closed");
+    expect(columns.map((c) => c.slug)).toContain("in_review");
 
     // Sanity: the seed set the right defaults.
     const statuses = await getWorkspaceStatuses(ws.id);
@@ -114,6 +113,6 @@ describe("derived roadmap (Sync ON) — status whitelist", () => {
       .filter((s) => s.showOnRoadmap)
       .map((s) => s.slug)
       .sort();
-    expect(on).toEqual(["closed", "completed", "in_progress", "planned"]);
+    expect(on).toEqual(["completed", "declined", "in_progress", "in_review"]);
   });
 });

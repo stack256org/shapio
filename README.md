@@ -127,26 +127,25 @@ curl -o .env https://raw.githubusercontent.com/stack256org/shapio/main/.env.dock
 docker compose up -d
 ```
 
-This downloads the app and worker images from
+This downloads the image from
 [GitHub Packages](https://github.com/stack256org/shapio/pkgs/container/shapio),
 then starts PostgreSQL, applies migrations, and leaves `app` and `worker`
-running. The app publishes on `http://localhost:3000` — change the host port
+running (both are the same image, started with a different command). The app publishes on `http://localhost:3000` — change the host port
 with `APP_PORT=8080` in `.env` if 3000 is already taken.
 
 <!-- BEGIN GENERATED: image-tags -->
 Pin a version in production, because `latest` moves with every release:
 
 ```bash
-IMAGE_TAG=0.1.0 docker compose up -d
+IMAGE_TAG=0.2.0 docker compose up -d
 ```
 
-Available tags are `latest`, the `0` / `0.1` / `0.1.0` ladder, `main` (rebuilt on
+Available tags are `latest`, the `0` / `0.2` / `0.2.0` ladder, `main` (rebuilt on
 every change, expect rough edges), and a fixed `sha-<short>` per build. Each carries builds
 for both Intel and ARM machines:
 
 ```bash
-docker pull ghcr.io/stack256org/shapio:0.1.0          # app
-docker pull ghcr.io/stack256org/shapio-worker:0.1.0   # worker
+docker pull ghcr.io/stack256org/shapio:0.2.0
 ```
 <!-- END GENERATED: image-tags -->
 
@@ -156,7 +155,7 @@ bump rather than editing it by hand.</sub>
 
 > **First release only:** a new GitHub Packages entry defaults to
 > **private**, even in a public repository. Repository → Packages →
-> `shapio` / `shapio-worker` → Package settings → Change visibility →
+> `shapio` → Package settings → Change visibility →
 > Public — otherwise `docker pull` fails for anyone not signed in. CI's
 > `verify-public` job in `release.yml` checks this automatically and fails
 > loudly until it's done.
@@ -178,7 +177,7 @@ database runs on the Docker host itself rather than a remote server.
 
 ### Building it yourself
 
-Only if you changed the code. This compiles both images, which on a small
+Only if you changed the code. This compiles the image, which on a small
 server is slow and memory-hungry.
 
 ```bash
@@ -223,19 +222,40 @@ updating a production instance.
 
 ### Anything that runs a container
 
-Coolify, Dokploy, CapRover, Portainer, Kubernetes, Docker Swarm, ECS. Point
-them at `ghcr.io/stack256org/shapio` (app) and `ghcr.io/stack256org/shapio-worker`
-(worker):
+Coolify, Dokploy, CapRover, Portainer, Kubernetes, Docker Swarm, ECS.
 
-| Service | Image | Command | Notes |
-|---------|-------|---------|-------|
-| app | `shapio` | `node server.js` (image default) | Serves on port 3000. Probe `GET /api/health`. |
-| worker | `shapio-worker` | `tsx scripts/worker.ts` (image default) | No web port. Email and background jobs don't run without it. |
-| migrate | `shapio-worker` | `tsx scripts/migrate.ts` | Run once, to completion, before the other two on each deploy. |
+**One container (Dokploy, Coolify, `docker run`).** Point the platform at
+`ghcr.io/stack256org/shapio`, set the environment variables, and **leave the
+command blank**. With no command the image's entrypoint applies pending
+migrations, then runs the web server **and exactly one worker** in that
+container, so selecting a new version migrates itself. Probe `GET /api/health`
+on port 3000.
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `SHAPIO_ROLE` | `all` | `all` = migrate + web + worker. Or `app`, `worker`, `migrate` to run a single role. |
+| `SHAPIO_RUN_MIGRATIONS` | `true` for `all`/`migrate`, else `false` | Set `false` if your managed database user may not run DDL. |
+
+Setting an explicit command such as `next start` **overrides the entrypoint**:
+no migrations and no worker. Run exactly one container in role `all` — two
+workers can double-process jobs. If the web server or the worker dies, the
+container exits so the platform restarts it.
+
+**Separate services (Kubernetes, Swarm, ECS).** Run the same image three times:
+
+| Service | Command | Notes |
+|---------|---------|-------|
+| migrate | `tsx scripts/migrate.ts` | Run once, to completion, before the other two on each deploy. |
+| app | `next start` | Serves on port 3000. Probe `GET /api/health`. |
+| worker | `tsx scripts/worker.ts` | No web port. Email and background jobs don't run without it. |
+
+(`next` and `tsx` live in `/app/node_modules/.bin`; there is no pnpm in the
+image.)
 
 On the default `local` storage setting, mount a permanent volume at
 `/app/public/uploads` for the app and worker services. S3/R2 storage needs
-none.
+none. Without it, uploads vanish on the next redeploy — the container logs a
+warning at boot when the mount is missing.
 
 ### Railway, Render, Fly.io
 

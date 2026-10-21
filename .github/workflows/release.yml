@@ -5,12 +5,12 @@ name: Release
 # It looks at the "version" field in package.json. If no git tag exists for it
 # yet, this push is a release, and the workflow does all of it:
 #
-#   1. builds the app and worker images for Intel and ARM
-#   2. publishes them to GitHub Packages, tagged with the version ladder + latest
+#   1. builds the image for Intel and ARM
+#   2. publishes it to GitHub Packages, tagged with the version ladder + latest
 #   3. creates the v<version> git tag
 #   4. creates the GitHub Release, with notes taken from CHANGELOG.md
 #
-# If the version already has a tag, it is an ordinary push: the images are
+# If the version already has a tag, it is an ordinary push: the image is
 # still rebuilt and published as `main` and `sha-<short>`, and nothing is
 # released.
 #
@@ -34,10 +34,15 @@ name: Release
 # the sha- image tag and the release target below use workflow_run.head_sha
 # instead, so a release always lands on the commit that passed.
 #
+# ONE IMAGE: the web app, the background worker and the one-shot migration job
+# are all the same image (Dockerfile); compose picks the role with `command:`,
+# and with no command scripts/docker-entrypoint.sh runs them together. There used
+# to be a separate shapio-worker image — it is no longer built, so existing tags
+# remain pullable but receive no new releases.
+#
 # ONE-TIME STEP after the first successful run: a new GitHub Packages entry is
-# private, even in a public repository, for each image below. Repository ->
-# Packages -> shapio / shapio-worker -> Package settings -> Change
-# visibility -> Public. Until then `docker pull` fails for anyone who is not
+# private, even in a public repository. Repository -> Packages -> shapio ->
+# Package settings -> Change visibility -> Public. Until then `docker pull` fails for anyone who is not
 # signed in. The verify-public job below checks this for you and turns the
 # run red if a customer could not actually pull what was just published.
 
@@ -117,7 +122,7 @@ jobs:
           fi
           echo "Found the changelog section for $version."
 
-  # ── Build and publish both images ─────────────────────────────────────────
+  # ── Build and publish the image ───────────────────────────────────────────
   image:
     name: Build and push (${{ matrix.name }}, amd64 + arm64)
     needs: check
@@ -132,9 +137,6 @@ jobs:
           - name: app
             file: Dockerfile
             suffix: ""
-          - name: worker
-            file: Dockerfile.worker
-            suffix: "-worker"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -220,9 +222,9 @@ jobs:
   # daemon asks, because that is the only vantage point from which a private
   # package looks different from a public one.
   #
-  # It deliberately does NOT gate `release` below. The images are already
+  # It deliberately does NOT gate `release` below. The image is already
   # pushed by the time this runs, so blocking the tag would leave a published
-  # release with no images. A red run is the signal; the fix is one click in
+  # release with no image. A red run is the signal; the fix is one click in
   # Package settings and is never needed again for that package.
   verify-public:
     name: Anyone can pull it (${{ matrix.name }})
@@ -233,8 +235,6 @@ jobs:
         include:
           - name: app
             suffix: ""
-          - name: worker
-            suffix: "-worker"
     steps:
       - name: Resolve it signed out, the way a customer does
         env:
@@ -302,11 +302,10 @@ jobs:
           fi
 
           {
-            echo "Images for this release:"
+            echo "Image for this release:"
             echo
             echo '```bash'
             echo "docker pull ghcr.io/${GITHUB_REPOSITORY,,}:$version"
-            echo "docker pull ghcr.io/${GITHUB_REPOSITORY,,}-worker:$version"
             echo '```'
           } >> notes.md
 
@@ -336,9 +335,9 @@ jobs:
             echo
             echo "- Tag \`v$version\` created"
             echo "- Release published"
-            echo "- Images: \`ghcr.io/${GITHUB_REPOSITORY,,}:$version\` and \`-worker\` (also \`latest\`)"
+            echo "- Image: \`ghcr.io/${GITHUB_REPOSITORY,,}:$version\` (also \`latest\`)"
             echo
             echo "> [!NOTE]"
-            echo "> If this is the first release, both packages are still **private**."
-            echo "> Repository → Packages → shapio / shapio-worker → Package settings → Change visibility."
+            echo "> If this is the first release, the package is still **private**."
+            echo "> Repository → Packages → shapio → Package settings → Change visibility."
           } >> "$GITHUB_STEP_SUMMARY"

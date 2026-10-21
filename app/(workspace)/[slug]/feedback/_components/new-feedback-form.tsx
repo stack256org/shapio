@@ -24,6 +24,7 @@ const QuillEditor = dynamic(
   { ssr: false }
 );
 
+const MIN_TITLE_LENGTH = 3;
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set([
   "image/png",
@@ -90,6 +91,20 @@ export function NewFeedbackForm({
   });
   const { guardNavigation } = useUnsavedChangesGuard(isDirty);
 
+  // Publish / Save as Draft stay disabled below the minimum, so the reason has
+  // to be visible on the field itself — submit() is never reached to report it.
+  // Silent while the field is empty; it appears as soon as the user starts
+  // typing and clears itself at the minimum.
+  const trimmedTitleLength = title.trim().length;
+  const titleTooShort =
+    trimmedTitleLength > 0 && trimmedTitleLength < MIN_TITLE_LENGTH;
+  const titleHint = titleTooShort
+    ? `Title must be at least ${MIN_TITLE_LENGTH} characters (${
+        MIN_TITLE_LENGTH - trimmedTitleLength
+      } more needed).`
+    : null;
+  const titleMessage = titleError ?? titleHint;
+
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     setImageError(null);
@@ -120,8 +135,8 @@ export function NewFeedbackForm({
   function submit(asDraft: boolean) {
     setTitleError(null);
 
-    if (title.trim().length < 3) {
-      setTitleError("Title must be at least 3 characters.");
+    if (title.trim().length < MIN_TITLE_LENGTH) {
+      setTitleError(`Title must be at least ${MIN_TITLE_LENGTH} characters.`);
       return;
     }
 
@@ -190,9 +205,13 @@ export function NewFeedbackForm({
             Title <span className="text-ir-danger">*</span>
           </label>
           <input
+            aria-describedby={
+              titleMessage ? "feedback-title-message" : undefined
+            }
+            aria-invalid={titleMessage ? true : undefined}
             autoComplete="off"
             className={`w-full rounded-ir-input border bg-ir-surface px-3 py-2 text-sm text-ir-body placeholder:text-ir-muted focus:outline-none focus:ring-2 focus:ring-ir-primary/40 disabled:opacity-50 ${
-              titleError ? "border-ir-danger" : "border-ir-border"
+              titleMessage ? "border-ir-danger" : "border-ir-border"
             }`}
             disabled={isPending}
             id="feedback-title"
@@ -207,8 +226,13 @@ export function NewFeedbackForm({
             type="text"
             value={title}
           />
-          {titleError && (
-            <p className="mt-1 text-xs text-ir-danger">{titleError}</p>
+          {titleMessage && (
+            <p
+              className="mt-1 text-xs text-ir-danger"
+              id="feedback-title-message"
+            >
+              {titleMessage}
+            </p>
           )}
         </div>
 
@@ -366,14 +390,17 @@ export function NewFeedbackForm({
           Cancel
         </Button>
         <Button
-          disabled={isPending || title.trim().length < 3}
+          disabled={isPending || trimmedTitleLength < MIN_TITLE_LENGTH}
           onClick={() => submit(true)}
           type="button"
           variant="outline"
         >
           {pendingAction === "draft" ? "Saving…" : "Save as Draft"}
         </Button>
-        <Button disabled={isPending || title.trim().length < 3} type="submit">
+        <Button
+          disabled={isPending || trimmedTitleLength < MIN_TITLE_LENGTH}
+          type="submit"
+        >
           {pendingAction === "publish" ? "Publishing…" : "Publish"}
         </Button>
       </div>

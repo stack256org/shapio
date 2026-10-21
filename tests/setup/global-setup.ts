@@ -3,15 +3,40 @@ import { existsSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
-import EmbeddedPostgres from "embedded-postgres";
 
 const execFileAsync = promisify(execFile);
+
+// embedded-postgres registers `async-exit-hook` handlers as a side effect of
+// being imported, and that hook ends the process with `process.exit(0)` from a
+// `beforeExit` listener — which silently overwrites the non-zero exit code
+// Vitest sets when tests fail, so `pnpm test` (and CI) reported success on
+// failing runs. The hook is only needed until Postgres has been stopped (it
+// stops any still-running instance if the run is interrupted), so it is kept
+// for the run and removed again in the teardown below.
+const EXIT_HOOK_EVENTS = [
+  "exit",
+  "beforeExit",
+  "SIGHUP",
+  "SIGINT",
+  "SIGTERM",
+  "SIGBREAK",
+] as const;
+
+function snapshotExitListeners() {
+  return new Map(
+    EXIT_HOOK_EVENTS.map((event) => [event, new Set(process.listeners(event))])
+  );
+}
 
 // Runs once before the whole test run: spins up a fresh, ephemeral Postgres
 // instance dedicated to tests (separate port/data dir from the dev database),
 // creates the test database, and syncs its schema — so `pnpm test` works
 // standalone with no manual setup, in local dev or CI alike.
 export default async function globalSetup() {
+  // Dynamic import so the listeners embedded-postgres adds on load can be told
+  // apart from the ones that were already there.
+  const listenersBefore = snapshotExitListeners();
+  const { default: EmbeddedPostgres } = await import("embedded-postgres");
   // Same override as vitest.config.ts (this runs in its own process, so it
   // needs its own copy of that fix): clear these first so .env.test's values
   // always win, even when the parent job already set its own DATABASE_URL.
@@ -80,5 +105,15 @@ export default async function globalSetup() {
   return async () => {
     await pg.stop();
     await rm(dataDir, { recursive: true, force: true });
+
+    // Postgres is stopped, so the hook has nothing left to do — remove it so it
+    // can't override Vitest's exit code (see EXIT_HOOK_EVENTS above).
+    for (const event of EXIT_HOOK_EVENTS) {
+      for (const listener of process.listeners(event)) {
+        if (!listenersBefore.get(event)?.has(listener)) {
+          process.removeListener(event, listener);
+        }
+      }
+    }
   };
 }

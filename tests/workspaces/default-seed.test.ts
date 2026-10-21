@@ -43,7 +43,14 @@ describe("workspace onboarding — default seed data", () => {
       .from(workspaceStatuses)
       .where(eq(workspaceStatuses.workspaceId, ws.id));
 
-    expect(statuses).toHaveLength(6);
-    expect(statuses.map((s) => s.slug)).toContain("open");
+    // The 5-status flow in lib/workspace-statuses/defaults.ts: In Review is the
+    // intake default; Draft is the system status for unpublished feedback.
+    expect(statuses.map((s) => s.slug).sort()).toEqual([
+      "completed",
+      "declined",
+      "draft",
+      "in_progress",
+      "in_review",
+    ]);
   });
 });

@@ -5,16 +5,16 @@
 #   # edit .env: set APP_SECRET (openssl rand -base64 36) and NEXT_PUBLIC_APP_URL
 #   docker compose up -d
 #
-# This pulls the app and worker images published by .github/workflows/release.yml
-# for both Intel and ARM, rather than compiling Next.js on your server — which on
-# a small machine is slow and memory-hungry.
+# This pulls the image published by .github/workflows/release.yml for both Intel
+# and ARM, rather than compiling Next.js on your server — which on a small machine
+# is slow and memory-hungry.
 #
 # The other two files are alternatives, never used alongside this one:
 #   docker-compose.external-db.yml   your own PostgreSQL instead of the bundled one
-#   docker-compose.build.yml         build both images from source, for changing the code
+#   docker-compose.build.yml         build the image from source, for changing the code
 #
 # Pin a version in production, because `latest` moves on every release:
-#   IMAGE_TAG=0.1.0 docker compose up -d
+#   IMAGE_TAG=0.2.0 docker compose up -d
 #
 # Port 3000 already taken? Use APP_PORT, never PORT. See the app service below.
 #
@@ -22,8 +22,9 @@
 # are pinned to literal names and survive `down`, `pull` and `up -d`. Only
 # `down -v` destroys them.
 
-x-app-image: &app-image ${SHAPIO_IMAGE:-ghcr.io/stack256org/shapio}:${IMAGE_TAG:-latest}
-x-worker-image: &worker-image ${SHAPIO_WORKER_IMAGE:-ghcr.io/stack256org/shapio-worker}:${IMAGE_TAG:-latest}
+# One image fills all three roles below (migrate, app, worker) — the only
+# difference is `command:`. Overridable with SHAPIO_IMAGE.
+x-image: &image ${SHAPIO_IMAGE:-ghcr.io/stack256org/shapio}:${IMAGE_TAG:-latest}
 
 services:
   postgres:
@@ -71,7 +72,7 @@ services:
     restart: "no"
 
   migrate:
-    image: *worker-image
+    image: *image
     pull_policy: always
     command: ["/app/node_modules/.bin/tsx", "scripts/migrate.ts"]
     environment:
@@ -84,8 +85,9 @@ services:
     restart: "no"
 
   app:
-    image: *app-image
+    image: *image
     pull_policy: always
+    command: ["/app/node_modules/.bin/next", "start"]
     restart: unless-stopped
     env_file: .env
     # Published to the host so a fresh `docker compose up -d` is reachable at
@@ -113,11 +115,15 @@ services:
     # redeclare it here.
 
   worker:
-    image: *worker-image
+    image: *image
     pull_policy: always
     command: ["/app/node_modules/.bin/tsx", "scripts/worker.ts"]
     restart: unless-stopped
     env_file: .env
+    # The image's default healthcheck probes :3000, which the worker does not
+    # serve (and the worker writes no heartbeat), so there is nothing to check.
+    healthcheck:
+      disable: true
     volumes:
       - uploads:/app/public/uploads
     depends_on:

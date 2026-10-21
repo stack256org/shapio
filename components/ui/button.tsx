@@ -47,6 +47,34 @@ function getMotionComponent(type: React.ElementType) {
   return cached
 }
 
+// A server component's element can reach this client component as a
+// React.lazy wrapper rather than a plain element (React's Flight client does
+// this when the element lives in a row that streams in after its parent) —
+// React.isValidElement() is false for it, so asChild would silently skip the
+// button styling on the server and then mismatch on hydration. Unwrap it the
+// way React itself does when it meets a lazy child: call its initializer,
+// which returns the resolved value or suspends until it is ready.
+const REACT_LAZY_TYPE = Symbol.for("react.lazy")
+
+type LazyNode = {
+  $$typeof: symbol
+  _payload: unknown
+  _init: (payload: unknown) => React.ReactNode
+}
+
+function resolveLazyChild(node: React.ReactNode): React.ReactNode {
+  let current = node
+  while (
+    typeof current === "object" &&
+    current !== null &&
+    (current as unknown as LazyNode).$$typeof === REACT_LAZY_TYPE
+  ) {
+    const lazy = current as unknown as LazyNode
+    current = lazy._init(lazy._payload)
+  }
+  return current
+}
+
 // motion.create()'s props conflict with the native HTML drag-event handlers
 // (onDrag/onDragStart/etc. have incompatible signatures) — Button never
 // exposes native drag, so those keys are dropped from the prop surface.
@@ -117,10 +145,11 @@ function Button({
     // unmodified avoids ever fabricating that extra host element; callers
     // should construct asChild's child on the client (see
     // add-feedback-button.tsx) so this branch is never actually hit.
-    if (!React.isValidElement(children)) {
+    const resolvedChild = resolveLazyChild(children)
+    if (!React.isValidElement(resolvedChild)) {
       return children
     }
-    const child = children as React.ReactElement<Record<string, unknown>>
+    const child = resolvedChild as React.ReactElement<Record<string, unknown>>
     const MotionChild = getMotionComponent(child.type as React.ElementType)
     return <MotionChild {...mergeProps(ownProps, child.props)} />
   }

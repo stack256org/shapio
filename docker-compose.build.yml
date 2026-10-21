@@ -4,12 +4,21 @@
 #   cp .env.docker.example .env      # set APP_SECRET and NEXT_PUBLIC_APP_URL
 #   docker compose -f docker-compose.build.yml up -d
 #
-# Most people do NOT want this file. It compiles both the app and worker images
-# on your machine, which on a small server is slow and memory-hungry. Use plain
-# docker-compose.yml instead, which pulls the images already published by
+# Most people do NOT want this file. It compiles the image on your machine, which
+# on a small server is slow and memory-hungry. Use plain docker-compose.yml
+# instead, which pulls the image already published by
 # .github/workflows/release.yml.
 #
 # The main reason to build is that you changed the code.
+
+# One image fills all three roles below (migrate, app, worker) — the only
+# difference is `command:`. Each service declares the same build and tag, so the
+# build runs once and the layer cache serves the other two.
+x-build: &build
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: shapio:local
 
 services:
   postgres:
@@ -45,9 +54,7 @@ services:
     restart: "no"
 
   migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
+    <<: *build
     command: ["/app/node_modules/.bin/tsx", "scripts/migrate.ts"]
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -59,9 +66,8 @@ services:
     restart: "no"
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *build
+    command: ["/app/node_modules/.bin/next", "start"]
     restart: unless-stopped
     env_file: .env
     # Published to the host so a fresh `docker compose up -d` is reachable at
@@ -87,12 +93,14 @@ services:
     # redeclare it here.
 
   worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
+    <<: *build
     command: ["/app/node_modules/.bin/tsx", "scripts/worker.ts"]
     restart: unless-stopped
     env_file: .env
+    # The image's default healthcheck probes :3000, which the worker does not
+    # serve (and the worker writes no heartbeat), so there is nothing to check.
+    healthcheck:
+      disable: true
     volumes:
       - uploads:/app/public/uploads
     depends_on:

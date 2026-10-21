@@ -18,6 +18,17 @@ export function Providers({ children }: { children: ReactNode }) {
       defaultTheme="light"
       disableTransitionOnChange
       enableSystem={false}
+      // next-themes renders an inline anti-flash <script>. The server-rendered
+      // copy is the one that runs (it sets the theme before first paint); when
+      // the provider renders on the client — hydration, or a remount — React 19
+      // warns "Encountered a script tag while rendering React component" even
+      // though a client-rendered script never executes. Giving the client copy
+      // a non-JavaScript type makes React treat it as a data block and skip the
+      // warning. Server output is unchanged, and the script already suppresses
+      // hydration warnings. next-themes issue #387.
+      scriptProps={
+        typeof window === "undefined" ? undefined : { type: "application/json" }
+      }
     >
       <UnsavedChangesProvider>{children}</UnsavedChangesProvider>
       <Toaster position="bottom-right" />

@@ -87,7 +87,10 @@ export async function createFirstAdminAction(input: {
 
       await tx.insert(account).values({
         id: randomUUID(),
-        accountId: email,
+        // Better Auth requires a credential account's accountId to be the user
+        // id — sign-in rejects any other value (see the same note in
+        // lib/users/password.ts).
+        accountId: userId,
         createdAt: now,
         password: hashed,
         providerId: "credential",

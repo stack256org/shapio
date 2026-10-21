@@ -5,10 +5,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Emit a self-contained server (.next/standalone) for lean production/Docker
-  // images. See Dockerfile — the runner stage copies .next/standalone, plus
-  // .next/static and public/ alongside it.
-  output: "standalone",
+  // No `output: "standalone"` on purpose: the single Docker image runs
+  // `next start` from a full install, and also needs tsx, db/migrations and the
+  // worker source on disk (see Dockerfile).
   // The dev tools badge renders inside the embed iframe too (portal.localhost
   // shares this same dev server) and sits on top of the widget's floating
   // panel content — disable it rather than trying to style around it.
